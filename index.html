@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>余宜婷 - 30th Birthday</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Noto+Serif+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-light: #Fcfbf9;
+            --text-dark: #2c2a28;
+            --accent-gold: #c6a87c;
+            --shadow-soft: 0 20px 40px rgba(198, 168, 124, 0.1);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            font-family: 'Noto Serif SC', 'Cormorant Garamond', serif;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body.locked { overflow: hidden; }
+
+        .font-eng { font-family: 'Cormorant Garamond', serif; }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        /* 1. 起雾擦拭层 */
+        #fog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            transition: opacity 2s ease, visibility 2s ease;
+        }
+        #fog-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+        .fog-hint {
+            position: relative;
+            z-index: 101;
+            color: #888;
+            font-size: 14px;
+            letter-spacing: 4px;
+            animation: pulseHint 2s infinite;
+            pointer-events: none;
+        }
+        @keyframes pulseHint {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+
+        /* 2. 背景粒子层 */
+        #interactive-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: auto;
+        }
+
+        .content-layer {
+            position: relative;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .interactive-element { pointer-events: auto; }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* 3. 3D 翻转相片 */
+        .drag-container {
+            position: relative;
+            height: 80vh;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            overflow: visible;
+            perspective: 1000px;
+        }
+
+        .polaroid-wrapper {
+            position: absolute;
+            width: 220px;
+            height: 280px;
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+        }
+        .polaroid-wrapper:active { cursor: grabbing; }
+
+        .polaroid-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+
+        .polaroid-wrapper.is-flipped .polaroid-inner {
+            transform: rotateY(180deg);
+        }
+
+        .polaroid-front, .polaroid-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            backface-visibility: hidden;
+            border-radius: 4px;
+            padding: 15px 15px 40px 15px;
+            box-sizing: border-box;
+        }
+
+        .polaroid-front img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+        }
+
+        .polaroid-back {
+            transform: rotateY(180deg);
+            background: #fdfbf7;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #f0e9df;
+        }
+
+        .polaroid-caption {
+            position: absolute;
+            bottom: 12px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 12px;
+            color: #888;
+            letter-spacing: 2px;
+        }
+
+        .flip-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            width: 24px;
+            height: 24px;
+            background: #f0e9df;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            color: #a88965;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+        .flip-btn:hover { background: #e2d6c5; }
+
+        /* 4. 信封与打字机 */
+        .envelope-wrapper {
+            position: relative;
+            width: 320px;
+            height: 200px;
+            margin: 0 auto;
+            cursor: pointer;
+            transition: transform 0.4s ease;
+        }
+        .envelope-wrapper:hover { transform: translateY(-10px); }
+
+        .envelope {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #e8e3d8;
+            border-radius: 4px;
+            box-shadow: var(--shadow-soft);
+            perspective: 1000px;
+            z-index: 3;
+        }
+
+        .envelope-front {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            border-style: solid;
+            border-width: 100px 160px;
+            border-color: transparent transparent #f4f0ea transparent;
+            z-index: 4;
+        }
+        .envelope-left {
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-style: solid;
+            border-width: 100px 0 100px 160px;
+            border-color: transparent transparent transparent #efeae1;
+            z-index: 4;
+        }
+        .envelope-right {
+            position: absolute;
+            top: 0;
+            right: 0;
+            border-style: solid;
+            border-width: 100px 160px 100px 0;
+            border-color: transparent #efeae1 transparent transparent;
+            z-index: 4;
+        }
+        .envelope-flap {
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-style: solid;
+            border-width: 110px 160px 0 160px;
+            border-color: #dfd7ca transparent transparent transparent;
+            z-index: 5;
+            transform-origin: top;
+            transition: transform 0.8s ease-in-out, z-index 0.2s;
+        }
+        .wax-seal {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 40px;
+            background: #9b2c2c;
+            border-radius: 50%;
+            z-index: 6;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3), 0 4px 6px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e5b2b2;
+            font-size: 18px;
+            transition: opacity 0.4s ease;
+        }
+
+        .letter {
+            position: absolute;
+            bottom: 5px;
+            left: 5%;
+            width: 90%;
+            height: 95%;
+            background: #fffcf8;
+            border-radius: 4px;
+            z-index: 2;
+            box-shadow: 0 0 15px rgba(0,0,0,0.05);
+            transition: transform 1s cubic-bezier(0.19, 1, 0.22, 1), height 1s;
+            padding: 30px 25px;
+            box-sizing: border-box;
+            overflow-y: hidden;
+        }
+        .letter::-webkit-scrollbar { width: 4px; background: transparent; }
+        .letter::-webkit-scrollbar-thumb { background: rgba(198, 168, 124, 0.4); border-radius: 4px; }
+
+        .envelope-wrapper.is-open .envelope-flap {
+            transform: rotateX(180deg);
+            z-index: 1;
+        }
+        .envelope-wrapper.is-open .wax-seal { opacity: 0; }
+        .envelope-wrapper.is-open .letter {
+            transform: translateY(-160px) scale(1.2);
+            height: 400px;
+            z-index: 10;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.15);
+            overflow-y: auto;
+            padding-right: 15px;
+        }
+
+        .letter-content {
+            opacity: 0;
+            transition: opacity 0.5s ease 0.8s;
+        }
+        .envelope-wrapper.is-open .letter-content { opacity: 1; }
+
+        #typewriter-text {
+            font-size: 13px;
+            color: #555;
+            line-height: 2;
+            letter-spacing: 2px;
+            min-height: 150px;
+        }
+        .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 14px;
+            background: #c6a87c;
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+            margin-left: 2px;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* 渐入动画 */
+        .fade-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 1.2s ease, transform 1.2s ease;
+        }
+        .fade-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 5. 音乐播放器 */
+        #music-player {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(198, 168, 124, 0.3);
+            border-radius: 50%;
+            z-index: 90;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+        #music-player:hover { transform: scale(1.1); }
+        .record-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #2c2a28;
+            position: relative;
+            animation: spin 4s linear infinite;
+            animation-play-state: paused;
+        }
+        .record-icon::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px;
+            height: 6px;
+            background: #c6a87c;
+            border-radius: 50%;
+        }
+        .is-playing .record-icon { animation-play-state: running; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    </style>
+</head>
+<body class="locked">
+
+    <!-- 1. 擦拭薄雾层 -->
+    <div id="fog-overlay">
+        <canvas id="fog-canvas"></canvas>
+        <div class="fog-hint">指尖轻擦，拂去薄雾</div>
+    </div>
+
+    <!-- 2. 环境音乐（src 由 SITE_CONFIG.music 注入） -->
+    <audio id="bg-music" loop></audio>
+    <div id="music-player" class="interactive-element" title="播放/暂停音乐">
+        <div class="record-icon"></div>
+    </div>
+
+    <!-- 3. 背景粒子层 -->
+    <canvas id="interactive-bg"></canvas>
+
+    <div class="content-layer">
+
+        <header class="fixed top-0 w-full p-6 md:p-10 flex justify-between items-center z-50">
+            <div class="text-xs tracking-[0.2em] text-[#c6a87c] font-eng" id="header-brand">To Yiting</div>
+            <div class="text-[10px] tracking-widest text-gray-400 uppercase">Scroll slowly</div>
+        </header>
+
+        <!-- 首屏（由 JS 注入文案） -->
+        <section class="h-screen flex flex-col items-center justify-center relative px-6 text-center">
+            <div class="fade-up mb-6 text-sm md:text-base tracking-[0.4em] text-[#c6a87c] uppercase font-eng" id="hero-subtitle"></div>
+            <h1 class="fade-up text-5xl md:text-7xl lg:text-8xl font-light tracking-[0.2em] text-[#2c2a28] mb-8" id="hero-title" style="animation: float 6s ease-in-out infinite;"></h1>
+            <p class="fade-up text-gray-500 tracking-widest leading-loose max-w-lg mt-8 text-sm md:text-base" id="hero-desc"></p>
+
+            <div class="absolute bottom-16 fade-up">
+                <div class="w-[1px] h-20 bg-gray-300 mx-auto relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-full bg-[#c6a87c] animate-[translateY_2s_infinite]"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 画廊区（由 JS 根据 SITE_CONFIG.gallery 渲染） -->
+        <section class="py-24 px-4 min-h-screen flex flex-col items-center justify-center overflow-hidden relative">
+            <div class="text-center mb-16 fade-up">
+                <h2 class="text-3xl font-light tracking-[0.3em] mb-4 text-[#2c2a28]" id="gallery-title"></h2>
+                <p class="text-xs tracking-widest text-[#c6a87c]" id="gallery-hint"></p>
+            </div>
+            <div class="drag-container interactive-element" id="gallery-container"></div>
+        </section>
+
+        <!-- 过渡语（由 JS 根据 SITE_CONFIG.transition 渲染） -->
+        <section class="py-32 px-6 flex items-center justify-center bg-white/50 backdrop-blur-sm">
+            <div class="max-w-3xl mx-auto text-center space-y-12 fade-up" id="transition-container"></div>
+        </section>
+
+        <!-- 视频放映区（src/poster 由 SITE_CONFIG.video 注入） -->
+        <section class="py-24 px-6 flex flex-col items-center justify-center relative">
+            <div class="text-center mb-12 fade-up">
+                <h2 class="text-2xl font-light tracking-[0.3em] mb-4 text-[#2c2a28]" id="video-title"></h2>
+                <p class="text-xs tracking-widest text-[#c6a87c] font-eng" id="video-subtitle"></p>
+            </div>
+            <div class="w-full max-w-4xl relative fade-up group cursor-pointer" id="video-container">
+                <video id="memory-video" class="w-full h-auto md:h-[500px] object-cover rounded-sm shadow-2xl" playsinline>
+                    您的浏览器不支持视频播放。
+                </video>
+                <div class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors duration-500" id="play-overlay">
+                    <div class="w-16 h-16 rounded-full bg-white/30 backdrop-blur-md flex items-center justify-center border border-white/50 transition-transform duration-500 group-hover:scale-110">
+                        <div class="w-0 h-0 border-t-[8px] border-t-transparent border-l-[14px] border-l-white border-b-[8px] border-b-transparent ml-1"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 岁月留影（由 JS 根据 SITE_CONFIG.photoWall 渲染） -->
+        <section class="py-24 px-6 max-w-6xl mx-auto">
+            <div class="text-center mb-16 fade-up">
+                <h2 class="text-2xl font-light tracking-[0.3em] mb-4 text-[#2c2a28]" id="wall-title"></h2>
+                <p class="text-xs tracking-widest text-gray-400" id="wall-hint"></p>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 auto-rows-[150px] md:auto-rows-[220px]" id="photo-wall"></div>
+        </section>
+
+        <!-- 足迹坐标（由 JS 根据 SITE_CONFIG.map 渲染） -->
+        <section class="py-24 px-6 max-w-6xl mx-auto w-full relative">
+            <div class="text-center mb-16 fade-up">
+                <h2 class="text-2xl font-light tracking-[0.3em] mb-4 text-[#2c2a28]" id="map-title"></h2>
+                <p class="text-xs tracking-widest text-[#c6a87c] font-eng" id="map-subtitle"></p>
+                <p class="text-xs tracking-widest text-gray-400 mt-2" id="map-hint"></p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-12 items-center fade-up">
+                <div class="md:col-span-5 space-y-8 relative z-10" id="map-locations"></div>
+                <div class="md:col-span-7 relative h-[400px] md:h-[500px] w-full overflow-hidden rounded shadow-lg bg-[#f4f0ea]">
+                    <div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: radial-gradient(#c6a87c 1px, transparent 1px); background-size: 20px 20px;"></div>
+                    <div class="absolute inset-0 m-4 overflow-hidden rounded bg-white" id="map-photos"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 信件区（文案由 SITE_CONFIG.letter 注入） -->
+        <section class="min-h-screen py-32 flex flex-col items-center justify-center relative">
+            <div class="text-center mb-16 fade-up">
+                <h2 class="text-2xl font-light tracking-[0.3em] mb-4 text-[#2c2a28]" id="letter-title"></h2>
+                <p class="text-xs tracking-widest text-gray-400" id="letter-hint"></p>
+            </div>
+
+            <div class="envelope-wrapper interactive-element fade-up" id="envelope">
+                <div class="envelope">
+                    <div class="envelope-front"></div>
+                    <div class="envelope-left"></div>
+                    <div class="envelope-right"></div>
+                    <div class="envelope-flap">
+                        <div class="wax-seal font-eng" id="wax-initial">Y</div>
+                    </div>
+                    <div class="letter">
+                        <div class="letter-content">
+                            <h3 class="text-[#c6a87c] text-lg tracking-widest mb-4 text-center" id="letter-recipient"></h3>
+                            <div id="typewriter-text"></div>
+                            <p class="text-xs text-right text-gray-400 mt-6 tracking-widest opacity-0 transition-opacity duration-1000" id="signature"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="py-12 text-center text-xs tracking-[0.3em] text-gray-400 font-eng" id="footer-text"></footer>
+
+    </div>
+
+    <style>
+        @keyframes translateY {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+    </style>
+
+    <script>
+        /* ╔══════════════════════════════════════════════════════════════╗
+           ║                                                              ║
+           ║   ★★★★★  在这里修改所有内容  ★★★★★                              ║
+           ║                                                              ║
+           ║   改完保存，刷新浏览器即可看到效果。                            ║
+           ║   图片直接粘贴网络链接（建议以 https:// 开头）。                  ║
+           ║   文字里可以用 <br> 换行。                                       ║
+           ║                                                              ║
+           ╚══════════════════════════════════════════════════════════════╝ */
+        const SITE_CONFIG = {
+
+            /* ───────── 1. 顶部与首屏 ───────── */
+            header: {
+                brand: 'To Yiting',          // 左上角小标
+            },
+            hero: {
+                subtitle: 'Happy 30th Birthday',           // 英文副标题
+                name: '余 宜 婷',                            // 名字（空格隔开更有气质）
+                desc: '三十岁，像珍珠般温润闪耀的年纪。<br>滑动指尖，光影会为你让路。'
+            },
+
+            /* ───────── 2. 散落拾光（可拖拽翻转的拍立得相片）───────── */
+            // 想加几张就加几条；位置用 top/left/right/bottom（百分比或像素）+ rotate（度数）
+            gallery: {
+                title: '散落的拾光',
+                hint: '（拖拽移动，点击右下角翻转相片）',
+                photos: [
+                    {
+                        image: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=400&q=80',
+                        no: '01',
+                        backText: '初次相见的惊艳<br>至今难忘',
+                        backTitle: 'The Beginning',
+                        pos: { top: '5%',  left: '15%' }, rotate: -5
+                    },
+                    {
+                        image: 'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=400&q=80',
+                        no: '02',
+                        backText: '每一个日常<br>都是闪光的碎片',
+                        backTitle: 'Daily Love',
+                        pos: { top: '25%', right: '15%' }, rotate: 8
+                    },
+                    {
+                        image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80',
+                        no: '03',
+                        backText: '愿你永远自信、从容<br>做最美的自己',
+                        backTitle: 'Happy Birthday',
+                        pos: { top: '40%', left: '35%' }, rotate: -2,
+                        size: { width: 260, height: 320 }   // 选填：自定义这张的尺寸
+                    },
+                    {
+                        image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80',
+                        no: '04',
+                        backText: '去感受世界<br>去拥抱风',
+                        backTitle: 'Free Soul',
+                        pos: { top: '15%', left: '45%' }, rotate: 4
+                    },
+                    {
+                        image: 'https://images.unsplash.com/photo-1499933374294-4584d31ac0f8?auto=format&fit=crop&w=400&q=80',
+                        no: '05',
+                        backText: '镜头里的你<br>如此迷人',
+                        backTitle: 'My Muse',
+                        pos: { top: '55%', left: '12%' }, rotate: -8
+                    },
+                    {
+                        image: 'https://images.unsplash.com/photo-1505968409348-bd000797c92e?auto=format&fit=crop&w=400&q=80',
+                        no: '06',
+                        backText: '把最好的偏爱<br>都留给你',
+                        backTitle: 'Endless Love',
+                        pos: { top: '50%', right: '20%' }, rotate: 6
+                    }
+                ]
+            },
+
+            /* ───────── 3. 过渡语（中间的抒情段落）───────── */
+            // 每条要么是字符串，要么是 { text, highlight:true }（高亮金色段落）
+            transition: [
+                '褪去二十岁的懵懂与青涩，<br>迎来的，是沉淀后迷人的优雅与从容。',
+                '不论时光如何流转，<br>在我眼里，你始终是那个让我心动的小女孩。',
+                { text: '三十而立，光芒万丈。', highlight: true }
+            ],
+
+            /* ───────── 4. 视频区 ───────── */
+            video: {
+                title: '动态的你',
+                subtitle: 'Cinematic Memories',
+                src: 'https://cdn.pixabay.com/video/2020/05/24/40093-424823126_large.mp4',
+                poster: 'https://images.unsplash.com/photo-1499363145340-41a1b6ed3630?auto=format&fit=crop&w=1200&q=80'
+            },
+
+            /* ───────── 5. 光影辑录（照片墙网格）───────── */
+            // span 控制每张图占几格，可选：
+            //   ''                       普通方图（占 1 格）
+            //   'col-span-2'             横图（占 2 列）
+            //   'row-span-2'             竖图（占 2 行）
+            //   'col-span-2 row-span-2'  大图（占 2×2）
+            //   'col-span-2 md:col-span-3'  底部通栏长图
+            photoWall: {
+                title: '光影辑录',
+                hint: '（每一次定格，都是心动的证明）',
+                photos: [
+                    { image: 'https://images.unsplash.com/photo-1518104593124-ac2e82a5eb9b?auto=format&fit=crop&w=800&q=80',  span: 'col-span-2 row-span-2' },
+                    { image: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=400&q=80',  span: 'row-span-2' },
+                    { image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80',  span: '' },
+                    { image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=800&q=80',  span: 'col-span-2' },
+                    { image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',  span: '' },
+                    { image: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80',  span: '' },
+                    { image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',  span: 'col-span-2 md:col-span-3' }
+                ]
+            },
+
+            /* ───────── 6. 足迹坐标（左侧坐标列表 + 右侧切换照片）───────── */
+            map: {
+                title: '足迹坐标',
+                subtitle: 'Our World Map',
+                hint: '（悬浮或点击坐标，点亮那里的回忆）',
+                locations: [
+                    { coords: '35.6762° N, 139.6503° E', title: '初雪的浪漫 · 某座城', image: 'https://images.unsplash.com/photo-1542272201-b1ca555f8505?auto=format&fit=crop&w=800&q=80' },
+                    { coords: '18.2528° N, 109.5119° E', title: '海风与日落 · 某片海', image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80' },
+                    { coords: '48.8566° N, 2.3522° E',   title: '城市漫步 · 某条街', image: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=800&q=80' },
+                    { coords: '31.2304° N, 121.4737° E', title: '属于我们的家',       image: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=800&q=80' }
+                ]
+            },
+
+            /* ───────── 7. 一封专属情书 ───────── */
+            // letter 文本里的 \n 表示换行
+            letter: {
+                title: '一封专属情书',
+                hint: '（轻触火漆印章拆启）',
+                waxInitial: 'Y',                                // 火漆印章上的字母
+                recipient: '致 亲爱的宜婷',
+                content: '生日快乐，我的女孩。\n\n三十岁，是人生另一段华丽冒险的开篇。无论外面的世界多复杂，在我这里，你可以永远做最真实、最放松的自己。未来的每一步，无论是晴空万里还是细雨微风，我都会牵着你的手一起走。\n\n愿你岁岁平安，闪闪发光。\n我爱你。',
+                signature: '爱你的他'
+            },
+
+            /* ───────── 8. 页脚 ───────── */
+            footer: 'FOREVER & ALWAYS',
+
+            /* ───────── 9. 背景音乐（mp3 直链）───────── */
+            music: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=romantic-piano-116132.mp3'
+        };
+
+
+        /* ╔══════════════════════════════════════════════════════════════╗
+           ║   以下为渲染逻辑 —— 一般不需要修改                              ║
+           ╚══════════════════════════════════════════════════════════════╝ */
+
+        // 1. 顶部 + 首屏
+        function renderHeader() {
+            document.getElementById('header-brand').textContent = SITE_CONFIG.header.brand;
+        }
+        function renderHero() {
+            document.getElementById('hero-subtitle').textContent = SITE_CONFIG.hero.subtitle;
+            document.getElementById('hero-title').textContent = SITE_CONFIG.hero.name;
+            document.getElementById('hero-desc').innerHTML = SITE_CONFIG.hero.desc;
+        }
+
+        // 2. 散落拾光相册
+        function renderGallery() {
+            document.getElementById('gallery-title').textContent = SITE_CONFIG.gallery.title;
+            document.getElementById('gallery-hint').textContent = SITE_CONFIG.gallery.hint;
+            const container = document.getElementById('gallery-container');
+            container.innerHTML = SITE_CONFIG.gallery.photos.map((p, idx) => {
+                const pos = Object.entries(p.pos).map(([k, v]) => `${k}:${v}`).join('; ');
+                const size = p.size ? `width:${p.size.width}px; height:${p.size.height}px;` : '';
+                return `
+                <div class="polaroid-wrapper" style="${pos}; transform: rotate(${p.rotate}deg); ${size}" id="p${idx + 1}">
+                    <div class="polaroid-inner">
+                        <div class="polaroid-front">
+                            <img src="${p.image}" alt="Memory ${p.no}">
+                            <div class="polaroid-caption font-eng">${p.no}</div>
+                            <div class="flip-btn">↻</div>
+                        </div>
+                        <div class="polaroid-back">
+                            <p class="text-sm tracking-widest leading-loose text-gray-700">${p.backText}</p>
+                            <p class="text-xs text-[#c6a87c] mt-4 font-eng">${p.backTitle}</p>
+                            <div class="flip-btn">↺</div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // 3. 过渡语
+        function renderTransition() {
+            const container = document.getElementById('transition-container');
+            container.innerHTML = SITE_CONFIG.transition.map(item => {
+                if (typeof item === 'string') {
+                    return `<p class="text-lg md:text-xl leading-[2.5] tracking-[0.2em] font-light text-gray-700">${item}</p>`;
+                }
+                const cls = item.highlight
+                    ? 'text-xl md:text-2xl leading-[2.5] tracking-[0.3em] text-[#c6a87c] pt-8'
+                    : 'text-lg md:text-xl leading-[2.5] tracking-[0.2em] font-light text-gray-700';
+                return `<p class="${cls}">${item.text}</p>`;
+            }).join('');
+        }
+
+        // 4. 视频
+        function renderVideo() {
+            document.getElementById('video-title').textContent = SITE_CONFIG.video.title;
+            document.getElementById('video-subtitle').textContent = SITE_CONFIG.video.subtitle;
+            const v = document.getElementById('memory-video');
+            v.poster = SITE_CONFIG.video.poster;
+            v.innerHTML = `<source src="${SITE_CONFIG.video.src}" type="video/mp4">您的浏览器不支持视频播放。`;
+            v.load();
+        }
+
+        // 5. 光影辑录照片墙
+        function renderPhotoWall() {
+            document.getElementById('wall-title').textContent = SITE_CONFIG.photoWall.title;
+            document.getElementById('wall-hint').textContent = SITE_CONFIG.photoWall.hint;
+            const wall = document.getElementById('photo-wall');
+            wall.innerHTML = SITE_CONFIG.photoWall.photos.map((p, idx) => `
+                <div class="overflow-hidden rounded shadow-sm group fade-up ${p.span}" style="transition-delay:${idx * 100}ms;">
+                    <img src="${p.image}" alt="Memory" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                </div>
+            `).join('');
+        }
+
+        // 6. 足迹坐标
+        function renderMap() {
+            document.getElementById('map-title').textContent = SITE_CONFIG.map.title;
+            document.getElementById('map-subtitle').textContent = SITE_CONFIG.map.subtitle;
+            document.getElementById('map-hint').textContent = SITE_CONFIG.map.hint;
+
+            const locContainer = document.getElementById('map-locations');
+            locContainer.innerHTML = SITE_CONFIG.map.locations.map((loc, idx) => `
+                <div class="location-item group cursor-pointer relative py-4 border-b border-gray-200" data-target="loc-${idx + 1}">
+                    <div class="absolute left-0 top-0 h-full w-[2px] bg-[#c6a87c] scale-y-0 group-hover:scale-y-100 transition-transform duration-500 origin-top"></div>
+                    <p class="text-[10px] text-gray-400 font-eng tracking-widest mb-2 transition-colors duration-300">${loc.coords}</p>
+                    <h3 class="text-lg font-light tracking-[0.2em] text-[#2c2a28] group-hover:pl-4 transition-all duration-300 flex items-center">
+                        <span class="opacity-0 group-hover:opacity-100 mr-2 text-[#c6a87c] transition-opacity duration-300">📍</span>
+                        ${loc.title}
+                    </h3>
+                </div>
+            `).join('');
+
+            const photoContainer = document.getElementById('map-photos');
+            photoContainer.innerHTML = SITE_CONFIG.map.locations.map((loc, idx) => `
+                <img src="${loc.image}" alt="Map Photo ${idx + 1}" class="map-photo absolute inset-0 w-full h-full object-cover transition-all duration-1000 ${idx === 0 ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}" id="loc-${idx + 1}-img">
+            `).join('');
+        }
+
+        // 7. 情书
+        function renderLetter() {
+            document.getElementById('letter-title').textContent = SITE_CONFIG.letter.title;
+            document.getElementById('letter-hint').textContent = SITE_CONFIG.letter.hint;
+            document.getElementById('wax-initial').textContent = SITE_CONFIG.letter.waxInitial;
+            document.getElementById('letter-recipient').textContent = SITE_CONFIG.letter.recipient;
+            document.getElementById('signature').textContent = SITE_CONFIG.letter.signature;
+        }
+
+        // 8. 页脚
+        function renderFooter() {
+            document.getElementById('footer-text').textContent = SITE_CONFIG.footer;
+        }
+
+        // 9. 音乐
+        function renderMusic() {
+            const audio = document.getElementById('bg-music');
+            audio.innerHTML = `<source src="${SITE_CONFIG.music}" type="audio/mpeg">`;
+            audio.load();
+        }
+
+        // 一键渲染所有内容
+        renderHeader();
+        renderHero();
+        renderGallery();
+        renderTransition();
+        renderVideo();
+        renderPhotoWall();
+        renderMap();
+        renderLetter();
+        renderFooter();
+        renderMusic();
+
+
+        /* ╔══════════════════════════════════════════════════════════════╗
+           ║   交互逻辑 —— 一般不需要修改                                  ║
+           ╚══════════════════════════════════════════════════════════════╝ */
+
+        /* 1. 拂雾相见 */
+        const fogCanvas = document.getElementById('fog-canvas');
+        const fogCtx = fogCanvas.getContext('2d');
+        const fogOverlay = document.getElementById('fog-overlay');
+        const fogHint = document.querySelector('.fog-hint');
+        let fogCleared = false;
+        let eraseCount = 0;
+
+        function initFog() {
+            fogCanvas.width = window.innerWidth;
+            fogCanvas.height = window.innerHeight;
+            fogCtx.fillStyle = 'rgba(252, 251, 249, 0.95)';
+            fogCtx.fillRect(0, 0, fogCanvas.width, fogCanvas.height);
+            for (let i = 0; i < 5000; i++) {
+                fogCtx.fillStyle = `rgba(200, 200, 200, ${Math.random() * 0.1})`;
+                fogCtx.fillRect(Math.random() * fogCanvas.width, Math.random() * fogCanvas.height, 2, 2);
+            }
+        }
+        initFog();
+
+        function eraseFog(e) {
+            if (fogCleared) return;
+            const rect = fogCanvas.getBoundingClientRect();
+            const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+            const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+
+            fogCtx.globalCompositeOperation = 'destination-out';
+            fogCtx.beginPath();
+            fogCtx.arc(x, y, 50, 0, Math.PI * 2);
+            fogCtx.fill();
+
+            eraseCount++;
+            fogHint.style.opacity = 0;
+
+            if (eraseCount > 100) {
+                fogCleared = true;
+                fogOverlay.style.opacity = 0;
+                fogOverlay.style.visibility = 'hidden';
+                document.body.classList.remove('locked');
+                if(!isPlaying) toggleMusic();
+            }
+        }
+
+        fogCanvas.addEventListener('mousemove', (e) => { if(e.buttons === 1) eraseFog(e); });
+        fogCanvas.addEventListener('touchmove', eraseFog, { passive: true });
+        fogCanvas.addEventListener('mousedown', eraseFog);
+        window.addEventListener('resize', () => {
+            if (!fogCleared) initFog();
+            resizeBg();
+        });
+
+        /* 2. 音乐播放器 */
+        const bgMusic = document.getElementById('bg-music');
+        const musicPlayer = document.getElementById('music-player');
+        let isPlaying = false;
+
+        function toggleMusic() {
+            if (isPlaying) {
+                bgMusic.pause();
+                musicPlayer.classList.remove('is-playing');
+            } else {
+                bgMusic.play().catch(e => console.log("需用户交互后播放"));
+                musicPlayer.classList.add('is-playing');
+            }
+            isPlaying = !isPlaying;
+        }
+        musicPlayer.addEventListener('click', toggleMusic);
+
+        /* 3. 背景交互粒子 */
+        const bgCanvas = document.getElementById('interactive-bg');
+        const bgCtx = bgCanvas.getContext('2d');
+        let width, height;
+        let particles = [];
+        let mouse = { x: -1000, y: -1000, radius: 120 };
+
+        function resizeBg() {
+            width = bgCanvas.width = window.innerWidth;
+            height = bgCanvas.height = window.innerHeight;
+        }
+        resizeBg();
+
+        window.addEventListener('mousemove', (e) => { mouse.x = e.x; mouse.y = e.y; });
+        window.addEventListener('touchmove', (e) => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; }, { passive: true });
+        window.addEventListener('mouseleave', () => { mouse.x = -1000; mouse.y = -1000; });
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.size = Math.random() * 2.5 + 0.5;
+                this.baseX = this.x;
+                this.baseY = this.y;
+                this.density = (Math.random() * 30) + 1;
+                this.color = `rgba(198, 168, 124, ${Math.random() * 0.5 + 0.1})`;
+            }
+            draw() {
+                bgCtx.fillStyle = this.color;
+                bgCtx.beginPath();
+                bgCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                bgCtx.closePath();
+                bgCtx.fill();
+            }
+            update() {
+                this.baseY -= 0.3;
+                if(this.baseY < -10) this.baseY = height + 10;
+
+                let dx = mouse.x - this.x;
+                let dy = mouse.y - this.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < mouse.radius) {
+                    let forceDirectionX = dx / distance;
+                    let forceDirectionY = dy / distance;
+                    let force = (mouse.radius - distance) / mouse.radius;
+                    this.x -= forceDirectionX * force * this.density;
+                    this.y -= forceDirectionY * force * this.density;
+                } else {
+                    if (this.x !== this.baseX) this.x -= (this.x - this.baseX) / 20;
+                    if (this.y !== this.baseY) this.y -= (this.y - this.baseY) / 20;
+                }
+                this.draw();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            let numParticles = (width * height) / 12000;
+            for (let i = 0; i < numParticles; i++) particles.push(new Particle());
+        }
+        initParticles();
+
+        function animateBg() {
+            bgCtx.clearRect(0, 0, width, height);
+            for (let i = 0; i < particles.length; i++) particles[i].update();
+            requestAnimationFrame(animateBg);
+        }
+        animateBg();
+
+        /* 4. 相片拖拽与 3D 翻转（渲染后再绑定） */
+        function initPolaroidInteractions() {
+            const wrappers = document.querySelectorAll('.polaroid-wrapper');
+            let zIndexCounter = 100;
+
+            wrappers.forEach(wrapper => {
+                let isDragging = false;
+                let startX, startY, initialLeft, initialTop;
+                const flipBtns = wrapper.querySelectorAll('.flip-btn');
+
+                flipBtns.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        wrapper.classList.toggle('is-flipped');
+                        wrapper.style.zIndex = ++zIndexCounter;
+                    });
+                });
+
+                function startDrag(e) {
+                    if (e.target.classList.contains('flip-btn')) return;
+                    isDragging = true;
+                    wrapper.style.zIndex = ++zIndexCounter;
+
+                    const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                    const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+
+                    startX = clientX;
+                    startY = clientY;
+
+                    const rect = wrapper.getBoundingClientRect();
+                    const parentRect = wrapper.parentElement.getBoundingClientRect();
+
+                    initialLeft = rect.left - parentRect.left;
+                    initialTop = rect.top - parentRect.top;
+
+                    wrapper.style.transition = 'none';
+                    wrapper.style.transform = wrapper.style.transform.replace(/scale\([^\)]*\)/g, '') + ' scale(1.05)';
+                }
+
+                function drag(e) {
+                    if (!isDragging) return;
+                    e.preventDefault();
+
+                    const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                    const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+
+                    const dx = clientX - startX;
+                    const dy = clientY - startY;
+
+                    wrapper.style.left = `${initialLeft + dx}px`;
+                    wrapper.style.top = `${initialTop + dy}px`;
+                }
+
+                function endDrag() {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    wrapper.style.transition = 'transform 0.3s ease';
+                    wrapper.style.transform = wrapper.style.transform.replace(/scale\([^\)]*\)/g, 'scale(1)');
+                }
+
+                wrapper.addEventListener('mousedown', startDrag);
+                window.addEventListener('mousemove', drag);
+                window.addEventListener('mouseup', endDrag);
+
+                wrapper.addEventListener('touchstart', startDrag, { passive: false });
+                window.addEventListener('touchmove', drag, { passive: false });
+                window.addEventListener('touchend', endDrag);
+            });
+        }
+        initPolaroidInteractions();
+
+        /* 5. 信封拆启与打字机 */
+        const envelope = document.getElementById('envelope');
+        const typewriterContainer = document.getElementById('typewriter-text');
+        const signature = document.getElementById('signature');
+        let isLetterOpened = false;
+
+        envelope.addEventListener('click', function() {
+            if (isLetterOpened) return;
+            this.classList.add('is-open');
+            isLetterOpened = true;
+
+            setTimeout(() => {
+                typeWriterEffect(SITE_CONFIG.letter.content, typewriterContainer, 80, () => {
+                    signature.style.opacity = 1;
+                });
+            }, 1500);
+        });
+
+        function typeWriterEffect(text, element, speed, callback) {
+            element.innerHTML = '<span id="tw-content"></span><span class="cursor"></span>';
+            const contentSpan = document.getElementById('tw-content');
+            let i = 0;
+
+            function type() {
+                if (i < text.length) {
+                    if (text.charAt(i) === '\n') {
+                        contentSpan.innerHTML += '<br>';
+                    } else {
+                        contentSpan.innerHTML += text.charAt(i);
+                    }
+                    i++;
+                    setTimeout(type, speed + (Math.random() * 50));
+                } else {
+                    const cur = document.querySelector('.cursor');
+                    if (cur) cur.style.display = 'none';
+                    if (callback) callback();
+                }
+            }
+            type();
+        }
+
+        /* 6. 视频播放器 */
+        const memoryVideo = document.getElementById('memory-video');
+        const playOverlay = document.getElementById('play-overlay');
+        const videoContainer = document.getElementById('video-container');
+
+        if(videoContainer && memoryVideo) {
+            videoContainer.addEventListener('click', () => {
+                if (memoryVideo.paused) {
+                    memoryVideo.play();
+                    playOverlay.style.opacity = 0;
+                    if(isPlaying) toggleMusic();
+                } else {
+                    memoryVideo.pause();
+                    playOverlay.style.opacity = 1;
+                }
+            });
+            memoryVideo.addEventListener('ended', () => {
+                playOverlay.style.opacity = 1;
+            });
+        }
+
+        /* 7. 滚动淡入 + 地图切换 */
+        document.addEventListener("DOMContentLoaded", () => {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+            const locationItems = document.querySelectorAll('.location-item');
+            const mapPhotos = document.querySelectorAll('.map-photo');
+
+            function switchMapPhoto(targetId) {
+                mapPhotos.forEach(photo => {
+                    if (photo.id === `${targetId}-img`) {
+                        photo.classList.remove('opacity-0', 'scale-105');
+                        photo.classList.add('opacity-100', 'scale-100');
+                        photo.style.zIndex = 10;
+                    } else {
+                        photo.classList.remove('opacity-100', 'scale-100');
+                        photo.classList.add('opacity-0', 'scale-105');
+                        photo.style.zIndex = 1;
+                    }
+                });
+            }
+
+            locationItems.forEach(item => {
+                const targetId = item.getAttribute('data-target');
+                item.addEventListener('mouseenter', () => switchMapPhoto(targetId));
+                item.addEventListener('click', () => switchMapPhoto(targetId));
+            });
+        });
+    </script>
+</body>
+</html>
